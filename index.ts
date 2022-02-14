@@ -10,7 +10,9 @@ type TokensRecord = Record<
   "bitwise_operators" |
   "assignment_operators" |
   "logical_operators" |
-  "numerical_values" |
+  "numeric_literals" |
+  "string_literals" |
+  "boolean_literals" |
   "punctuations" |
   "floating_points" |
   "integers", Set<string>
@@ -75,9 +77,10 @@ const operatorLookAheadTable: Record<string, Record<string | "default", keyof To
 
 function generateTokensFromText(textContent: string) {
   const lines = textContent.split("\n");
-  const keywordsSet = new Set(["int", "float", "if", "else"]);
-  const punctuationsSet = new Set([",", ";", "(", ")", "{", "}"]);
-  const digitsSet = new Set(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])
+  const keywordsSet = new Set(["int", "float", "if", "else", "double", "char", "bool", "void"]);
+  const punctuationsSet = new Set([",", ";", "(", ")", "{", "}", "[", "]"]);
+  const digitsSet = new Set(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]);
+  const booleanLiteralsSet = new Set(["true", "false"]);
   const tokensRecord: TokensRecord = {
     // Using a set to store only unique values
     keywords: new Set(),
@@ -88,7 +91,9 @@ function generateTokensFromText(textContent: string) {
     bitwise_operators: new Set(),
     assignment_operators: new Set(),
     logical_operators: new Set(),
-    numerical_values: new Set(),
+    numeric_literals: new Set(),
+    string_literals: new Set(),
+    boolean_literals: new Set(),
     punctuations: new Set(),
     floating_points: new Set(),
     integers: new Set()
@@ -103,8 +108,8 @@ function generateTokensFromText(textContent: string) {
     return !isOperator && !isPunctuation && !isNumericLiteral;
   }
 
-  function checkIsNotWhitespace(char: string) {
-    return char !== "\r" && char !== "\n" && char !== " "
+  function checkIsWhitespace(char: string) {
+    return char === "\r" || char === "\n" || char === " "
   }
 
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
@@ -115,7 +120,7 @@ function generateTokensFromText(textContent: string) {
     for (; index < line.length; ) {
       const char = line[index];
       // If its not a carriage return, new line or a white space
-      if (checkIsNotWhitespace(char)) {
+      if (!checkIsWhitespace(char)) {
         const operatorLookAheadTableValue = operatorLookAheadTable[char];
         const isOperator = Boolean(operatorLookAheadTableValue);
         const isPunctuation = punctuationsSet.has(char);
@@ -159,7 +164,31 @@ function generateTokensFromText(textContent: string) {
           } else {
             tokensRecord.integers.add(lexeme)
           }
-          tokensRecord.numerical_values.add(lexeme)
+          tokensRecord.numeric_literals.add(lexeme)
+        }
+        // Starting of a string literal
+        else if (char === "\"") {
+          let lexeme = "";
+          index+=1;
+          // Move forward until we reach the end of line
+          for (; index < line.length; index++) {
+            const nextChar = line[index];
+            
+            // If we encounter a escape sequence dont close on the next "
+            if (nextChar === "\\" && line[index+1] === "\"") {
+              index+=1;
+              lexeme += "\\\""
+            } 
+            // Found closing quote, end of string literal
+            else if (nextChar === "\"") {
+              index+=1;
+              break;
+            } else {
+              // Concatenate each character to the lexeme
+              lexeme+=nextChar;
+            }
+          }
+          tokensRecord.string_literals.add(lexeme)
         }
         // It could either be a keyword, identifier or literals
         else {
@@ -168,14 +197,16 @@ function generateTokensFromText(textContent: string) {
           for (; index < line.length; index++) {
             const nextChar = line[index];
             // If we encounter a white space space
-            if (!checkIsNotWhitespace(nextChar)) {
+            if (checkIsWhitespace(nextChar)) {
               if (keywordsSet.has(lexeme)) {
                 tokensRecord.keywords.add(lexeme);
-                break
-              } else {
-                tokensRecord.identifiers.add(lexeme);
-                break
+              } else if (booleanLiteralsSet.has(lexeme)) {
+                tokensRecord.boolean_literals.add(lexeme);
               }
+              else {
+                tokensRecord.identifiers.add(lexeme);
+              }
+              break
             }
 
             const isAlphabetical = checkIsAlphabetical(nextChar);
@@ -185,7 +216,10 @@ function generateTokensFromText(textContent: string) {
             } else {
               if (keywordsSet.has(lexeme)) {
                 tokensRecord.keywords.add(lexeme);
-              } else {
+              } else if (booleanLiteralsSet.has(lexeme)) {
+                tokensRecord.boolean_literals.add(lexeme);
+              }
+              else {
                 tokensRecord.identifiers.add(lexeme);
               }
               break
