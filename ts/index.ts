@@ -25,7 +25,7 @@ const operatorLookAheadTable: Record<string, Record<string | "default", keyof To
     default: "arithmetic_operators"
   },
   "-": {
-    "+": "unary_operators",
+    "-": "unary_operators",
     "=": "assignment_operators",
     default: "arithmetic_operators"
   },
