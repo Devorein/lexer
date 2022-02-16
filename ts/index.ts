@@ -18,6 +18,20 @@ type TokensRecord = Record<
   "integers", Set<string>
 >
 
+// Key: operator
+// Value: Record
+//        Key: operator
+//        value: Token class
+// This look ahead table is used to check if the current character belongs to any of the key of the record
+// Then move the pointer and check the next character
+// If the next character belong in the nested record
+// Use the token class to concatenate both characters together in a single token class
+// Otherwise use the default token class
+// For example ++
+// + is the first key in the record
+// The second characters is also + and it does exist in + value
+// So gobble these two characters ++ together in a single token class
+// Otherwise if it was +a, then use the `default` token class 
 const operatorLookAheadTable: Record<string, Record<string | "default", keyof TokensRecord>> = {
   "+": {
     "+": "unary_operators",
@@ -75,12 +89,60 @@ const operatorLookAheadTable: Record<string, Record<string | "default", keyof To
   }
 }
 
+// A predefined set of keywords, punctuations, digits and boolean literals
+// We are using a set as lookup using a set is a lot faster than an array
+const keywordsSet = new Set(["int", "float", "if", "else", "double", "char", "bool", "void"]);
+const punctuationsSet = new Set([",", ";", "(", ")", "{", "}", "[", "]"]);
+const digitsSet = new Set(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]);
+const booleanLiteralsSet = new Set(["true", "false"]);
+
+/**
+ * Checks if a character is part of the regular alphabet
+ * @param char Character to check for alphabet
+ * @returns True if its an alphabet, false otherwise
+ */
+function checkIsAlphabetical(char: string) {
+  const operatorLookAheadTableValue = operatorLookAheadTable[char];
+  const isOperator = Boolean(operatorLookAheadTableValue);
+  const isPunctuation = punctuationsSet.has(char);
+  const isNumericLiteral = digitsSet.has(char);
+
+  return !isOperator && !isPunctuation && !isNumericLiteral;
+}
+
+/**
+ * Checks if a character is a whitespace
+ * @param char Character to check for whitespace
+ * @returns true if character is a whitespace, false otherwise
+ */
+function checkIsWhitespace(char: string) {
+  return char === "\r" || char === "\n" || char === " "
+}
+
+/**
+ * Populate the tokens record based on the token class of the passed lexeme
+ * @param tokensRecord Token record to populate
+ * @param lexeme Lexeme to check against keywords and literals set
+ */
+function checkIdentifier(tokensRecord: TokensRecord, lexeme: string) {
+  // If the lexeme is a keyword
+  if (keywordsSet.has(lexeme)) {
+    tokensRecord.keywords.add(lexeme);
+  } 
+  // If the lexeme is a boolean literal
+  else if (booleanLiteralsSet.has(lexeme)) {
+    tokensRecord.boolean_literals.add(lexeme);
+  }
+  // Otherwise it must be an identifier
+  else {
+    tokensRecord.identifiers.add(lexeme);
+  }
+}
+
 function generateTokensFromText(textContent: string) {
   const lines = textContent.split("\n");
-  const keywordsSet = new Set(["int", "float", "if", "else", "double", "char", "bool", "void"]);
-  const punctuationsSet = new Set([",", ";", "(", ")", "{", "}", "[", "]"]);
-  const digitsSet = new Set(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]);
-  const booleanLiteralsSet = new Set(["true", "false"]);
+  // This record keeps track of all the tokens encountered
+  // place them in the right token class (key of the record)
   const tokensRecord: TokensRecord = {
     // Using a set to store only unique values
     keywords: new Set(),
@@ -99,58 +161,49 @@ function generateTokensFromText(textContent: string) {
     integers: new Set()
   }
 
-  function checkIsAlphabetical(char: string) {
-    const operatorLookAheadTableValue = operatorLookAheadTable[char];
-    const isOperator = Boolean(operatorLookAheadTableValue);
-    const isPunctuation = punctuationsSet.has(char);
-    const isNumericLiteral = digitsSet.has(char);
-
-    return !isOperator && !isPunctuation && !isNumericLiteral;
-  }
-
-  function checkIsWhitespace(char: string) {
-    return char === "\r" || char === "\n" || char === " "
-  }
-
-  function checkIdentifier(lexeme: string) {
-    if (keywordsSet.has(lexeme)) {
-      tokensRecord.keywords.add(lexeme);
-    } else if (booleanLiteralsSet.has(lexeme)) {
-      tokensRecord.boolean_literals.add(lexeme);
-    }
-    else {
-      tokensRecord.identifiers.add(lexeme);
-    }
-  }
-
+  // Loop through each line
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
+    // Get each of the line
     const line = lines[lineNumber];
 
-    let index = 0;
-
-    for (; index < line.length; ) {
+    // Loop through each character of the line
+    // updating the index will be done dynamically so its not present in the for loop
+    // For example if we find two characters that belongs to the same token class
+    // index would be incremented by two rather than the usual one
+    for (let index = 0; index < line.length;) {
       const char = line[index];
-      // If its not a carriage return, new line or a white space
+      // If its not a carriage return, new line or a white space, we proceed to classify the lexeme
       if (!checkIsWhitespace(char)) {
+        // Check if the current character is present in the operator table
         const operatorLookAheadTableValue = operatorLookAheadTable[char];
         const isOperator = Boolean(operatorLookAheadTableValue);
+        // Check if the current character is present in the punctuation set
         const isPunctuation = punctuationsSet.has(char);
+        // Check if the current character is present in the digits set
         const isNumericLiteral = digitsSet.has(char);
 
         // If its an operator
         if (isOperator) {
+          // Operators usually come in a pair of two, so get the next character
           const nextChar = line[index + 1];
+          // If the current operator can be grouped with the next character
+          // and be classified in a single token class
           const tokenClass = operatorLookAheadTableValue[nextChar];
           if (tokenClass) {
+            // Populate the token record with the correct token class
+            // Concatenate current and next characters
             tokensRecord[tokenClass].add(char + nextChar);
+            // Increase the pointer as two characters have been consumed
             index++
           } else {
+            // Otherwise just add it to the default token class of the operator
             tokensRecord[operatorLookAheadTableValue.default].add(char);
           }
           index++
         }
         // punctuations lexemes only contain a single character, no need to look ahead
         else if (isPunctuation) {
+          // Add it to the punctuation token class
           tokensRecord.punctuations.add(char);
           index++;
         }
@@ -209,7 +262,7 @@ function generateTokensFromText(textContent: string) {
             const nextChar = line[index];
             // If we encounter a white space space
             if (checkIsWhitespace(nextChar)) {
-              checkIdentifier(lexeme)
+              checkIdentifier(tokensRecord, lexeme)
               break
             }
 
@@ -218,10 +271,10 @@ function generateTokensFromText(textContent: string) {
             if (isAlphabetical) {
               lexeme += nextChar;
               if (index === line.length - 1) {
-                checkIdentifier(lexeme)
+                checkIdentifier(tokensRecord, lexeme)
               }
             } else {
-              checkIdentifier(lexeme)
+              checkIdentifier(tokensRecord, lexeme)
               break
             }
           }
