@@ -199,7 +199,7 @@ function generateTokensFromText(textContent: string) {
               lexeme+=nextChar;
             }
           }
-          tokensRecord.string_literals.add(lexeme)
+          tokensRecord.string_literals.add(`"${lexeme}"`)
         }
         // It could either be a keyword, identifier or literals
         else {

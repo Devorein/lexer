@@ -138,14 +138,15 @@ func generateTokensFromText(textContent string) TokensRecord {
 					tokenClass, belongsToTokenClass := operatorLookAheadTableValue[nextChar]
 
 					if belongsToTokenClass {
-						tokensRecord[tokenClass][nextChar] = true
+						tokensRecord[tokenClass][char+nextChar] = true
 						index += 1
 					} else {
-						tokensRecord[operatorLookAheadTableValue["default"]][nextChar] = true
+						tokensRecord[operatorLookAheadTableValue["default"]][char] = true
 					}
 					index += 1
 				} else if isPunctuation {
 					tokensRecord["punctuations"][char] = true
+					index += 1
 				} else if isNumericLiteral {
 					lexeme, isFloatingPoint := char, false
 					index += 1
@@ -185,7 +186,7 @@ func generateTokensFromText(textContent string) TokensRecord {
 						}
 					}
 
-					tokensRecord["string_literals"][lexeme] = true
+					tokensRecord["string_literals"]["\""+lexeme+"\""] = true
 				} else {
 					lexeme := char
 					index += 1
