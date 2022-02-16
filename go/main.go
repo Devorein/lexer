@@ -89,6 +89,18 @@ func checkIsAlphabetical(char string) bool {
 
 type TokensRecord map[string]map[string]bool
 
+func checkIdentifier(tokensRecord TokensRecord, lexeme string) {
+	_, isKeyword := keywordsMap[lexeme]
+	_, isBooleanLiteral := booleanLiteralMap[lexeme]
+	if isKeyword {
+		tokensRecord["keywords"][lexeme] = true
+	} else if isBooleanLiteral {
+		tokensRecord["boolean_literals"][lexeme] = true
+	} else {
+		tokensRecord["identifiers"][lexeme] = true
+	}
+}
+
 func generateTokensFromText(textContent string) TokensRecord {
 	tokensRecord := TokensRecord{
 		"keywords":             {},
@@ -181,30 +193,17 @@ func generateTokensFromText(textContent string) TokensRecord {
 						nextChar := string(line[index])
 
 						if checkIsWhiteSpace(nextChar) {
-							_, isKeyword := keywordsMap[lexeme]
-							_, isBooleanLiteral := booleanLiteralMap[lexeme]
-							if isKeyword {
-								tokensRecord["keywords"][lexeme] = true
-							} else if isBooleanLiteral {
-								tokensRecord["boolean_literals"][lexeme] = true
-							} else {
-								tokensRecord["identifiers"][lexeme] = true
-							}
+							checkIdentifier(tokensRecord, lexeme)
 							break
 						}
 
 						if checkIsAlphabetical(nextChar) {
 							lexeme += nextChar
-						} else {
-							_, isKeyword := keywordsMap[lexeme]
-							_, isBooleanLiteral := booleanLiteralMap[lexeme]
-							if isKeyword {
-								tokensRecord["keywords"][lexeme] = true
-							} else if isBooleanLiteral {
-								tokensRecord["boolean_literals"][lexeme] = true
-							} else {
-								tokensRecord["identifiers"][lexeme] = true
+							if index == len(line)-1 {
+								checkIdentifier(tokensRecord, lexeme)
 							}
+						} else {
+							checkIdentifier(tokensRecord, lexeme)
 							break
 						}
 					}

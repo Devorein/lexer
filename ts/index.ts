@@ -112,6 +112,17 @@ function generateTokensFromText(textContent: string) {
     return char === "\r" || char === "\n" || char === " "
   }
 
+  function checkIdentifier(lexeme: string) {
+    if (keywordsSet.has(lexeme)) {
+      tokensRecord.keywords.add(lexeme);
+    } else if (booleanLiteralsSet.has(lexeme)) {
+      tokensRecord.boolean_literals.add(lexeme);
+    }
+    else {
+      tokensRecord.identifiers.add(lexeme);
+    }
+  }
+
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
     const line = lines[lineNumber];
 
@@ -198,14 +209,7 @@ function generateTokensFromText(textContent: string) {
             const nextChar = line[index];
             // If we encounter a white space space
             if (checkIsWhitespace(nextChar)) {
-              if (keywordsSet.has(lexeme)) {
-                tokensRecord.keywords.add(lexeme);
-              } else if (booleanLiteralsSet.has(lexeme)) {
-                tokensRecord.boolean_literals.add(lexeme);
-              }
-              else {
-                tokensRecord.identifiers.add(lexeme);
-              }
+              checkIdentifier(lexeme)
               break
             }
 
@@ -213,15 +217,11 @@ function generateTokensFromText(textContent: string) {
 
             if (isAlphabetical) {
               lexeme += nextChar;
+              if (index === line.length - 1) {
+                checkIdentifier(lexeme)
+              }
             } else {
-              if (keywordsSet.has(lexeme)) {
-                tokensRecord.keywords.add(lexeme);
-              } else if (booleanLiteralsSet.has(lexeme)) {
-                tokensRecord.boolean_literals.add(lexeme);
-              }
-              else {
-                tokensRecord.identifiers.add(lexeme);
-              }
+              checkIdentifier(lexeme)
               break
             }
           }
