@@ -15,6 +15,7 @@ type TokensRecord = Record<
   "boolean_literals" |
   "punctuations" |
   "floating_points" |
+  "character_literals" |
   "integers", Set<string>
 >
 
@@ -158,7 +159,8 @@ function generateTokensFromText(textContent: string) {
     boolean_literals: new Set(),
     punctuations: new Set(),
     floating_points: new Set(),
-    integers: new Set()
+    integers: new Set(),
+    character_literals: new Set(),
   }
 
   // Loop through each line
@@ -230,6 +232,25 @@ function generateTokensFromText(textContent: string) {
           }
           tokensRecord.numeric_literals.add(lexeme)
         }
+        // Starting of a character literal
+        else if (char === "'") {
+          let lexeme = "";
+          index+=1;
+          // Using a loop as some character might consist of multiple characters
+          // For example \0 is widely used to denote the end of a string
+          // But it consists of two individual characters 
+          for (; index < line.length; index ++) {
+            const nextChar = line[index];
+            // End of a character
+            if (nextChar === "'") {
+              index+=1
+              break;
+            }
+            lexeme += nextChar;
+          }
+          tokensRecord.character_literals.add(lexeme);
+        }
+
         // Starting of a string literal
         else if (char === "\"") {
           let lexeme = "";
