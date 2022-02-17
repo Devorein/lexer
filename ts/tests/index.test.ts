@@ -1,7 +1,10 @@
-import { generateTokensFromText } from "../index"
+/// <reference types="@types/jest" />
+
+import { generateTokensFromText } from "../src/generateTokensFromText";
 
 it(`Generate lexeme record`, () => {
-  expect(generateTokensFromText(`int a=1;\n
+  const lexemeRecord = generateTokensFromText(`
+int a=1;
 int b=2;
 
 a+=1;
@@ -56,7 +59,103 @@ bool d= true;
 bool e =false;
 
 char str[] = {'A', 'B'};
-char str[] = "\"AB";`)).toStrictEqual({
+char str[] = "\"AB";`)
+
+  console.log(lexemeRecord);
   
-})
+  expect(Array.from(lexemeRecord.identifiers)).toStrictEqual([
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "str",
+  ])
+
+  expect(Array.from(lexemeRecord.unary_operators)).toStrictEqual([
+    "++",
+    "--",
+  ])
+
+  expect(Array.from(lexemeRecord.arithmetic_operators)).toStrictEqual([
+    "+", "-", "/", "*", "%"
+  ])
+
+  expect(Array.from(lexemeRecord.relational_operators)).toStrictEqual([
+    "==",
+    "<=",
+    "<",
+    ">=",
+    ">",
+    "!=",
+  ])
+
+  expect(Array.from(lexemeRecord.bitwise_operators)).toStrictEqual([
+    "<<",
+    ">>",
+    "&",
+    "|",
+    "~",
+    "^",
+  ])
+
+  expect(Array.from(lexemeRecord.assignment_operators)).toStrictEqual([
+    "=",
+    "+=",
+    "-=",
+    "/=",
+    "*=",
+    "%=",
+  ])
+
+  expect(Array.from(lexemeRecord.logical_operators)).toStrictEqual([
+    "!",
+    "&&",
+    "||",
+  ])
+
+  expect(Array.from(lexemeRecord.numeric_literals)).toStrictEqual([
+    "1",
+    "2",
+    "10",
+    "22",
+    "22.5"
+  ])
+
+  expect(Array.from(lexemeRecord.string_literals)).toStrictEqual([
+    "Hello \"World",
+    "\"AB",
+  ])
+
+  expect(Array.from(lexemeRecord.boolean_literals)).toStrictEqual([
+    "true",
+    "false",
+  ])
+
+  expect(Array.from(lexemeRecord.punctuations)).toStrictEqual([
+    ";",
+    "(",
+    ")",
+    "{",
+    "[",
+    "]",
+    ",",
+    "}",
+  ])
+
+  expect(Array.from(lexemeRecord.floating_points)).toStrictEqual([
+    "22.5",
+  ])
+
+  expect(Array.from(lexemeRecord.punctuations)).toStrictEqual([
+    "1",
+    "2",
+    "10",
+    "22",
+  ])
+
+  expect(Array.from(lexemeRecord.character_literals)).toStrictEqual([
+    "A",
+    "B",
+  ])
 })
