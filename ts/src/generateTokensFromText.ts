@@ -1,23 +1,4 @@
-import fs from "fs";
-import path from "path";
-
-type TokensRecord = Record<
-  "keywords" |
-  "identifiers" |
-  "unary_operators" |
-  "arithmetic_operators" |
-  "relational_operators" |
-  "bitwise_operators" |
-  "assignment_operators" |
-  "logical_operators" |
-  "numeric_literals" |
-  "string_literals" |
-  "boolean_literals" |
-  "punctuations" |
-  "floating_points" |
-  "character_literals" |
-  "integers", Set<string>
->
+import { TokensRecord } from "../types";
 
 // Key: operator
 // Value: Record
@@ -140,7 +121,7 @@ function checkIdentifier(tokensRecord: TokensRecord, lexeme: string) {
   }
 }
 
-function generateTokensFromText(textContent: string) {
+export function generateTokensFromText(textContent: string) {
   const lines = textContent.split("\n");
   // This record keeps track of all the tokens encountered
   // place them in the right token class (key of the record)
@@ -307,12 +288,3 @@ function generateTokensFromText(textContent: string) {
   }
   return tokensRecord;
 }
-
-function printTokensRecord(tokensRecord: TokensRecord) {
-  Object.entries(tokensRecord).forEach(([tokenClass, tokensSet]) => {
-    const tokenClassLabel = tokenClass.split("_").map(tokenClassLabel => tokenClassLabel.charAt(0).toUpperCase() + tokenClassLabel.slice(1)).join(" ");
-    console.log(`${tokenClassLabel}: ${Array.from(tokensSet).join(" ")}`)
-  })
-}
-
-printTokensRecord(generateTokensFromText(fs.readFileSync(path.join(__dirname, "input2.txt"), "utf-8")));

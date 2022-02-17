@@ -27,12 +27,13 @@
     "baseUrl": "./",
     "watch": false,
     "types": [
+      "jest",
       "node"
     ],
     "outDir": "./dist",
     "rootDir": "./",
   },
   "include": [
-    "./index.ts"
+    "src/**/*.ts"
   ],
 }
