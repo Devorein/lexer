@@ -117,6 +117,7 @@ func generateTokensFromText(textContent string) TokensRecord {
 		"punctuations":         {},
 		"floating_points":      {},
 		"integers":             {},
+		"character_literals":   {},
 	}
 
 	lines := strings.Split(textContent, "\n")
@@ -187,6 +188,21 @@ func generateTokensFromText(textContent string) TokensRecord {
 					}
 
 					tokensRecord["string_literals"]["\""+lexeme+"\""] = true
+				} else if char == "'" {
+					lexeme := ""
+					index += 1
+
+					for ; index < len(line); index++ {
+						nextChar := string(line[index])
+
+						if nextChar == "'" {
+							index += 1
+							break
+						}
+
+						lexeme += nextChar
+					}
+					tokensRecord["character_literals"][lexeme] = true
 				} else {
 					lexeme := char
 					index += 1
