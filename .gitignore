@@ -2,3 +2,5 @@ node_modules
 dist
 input.txt
 coverage
+
+__pycache__
