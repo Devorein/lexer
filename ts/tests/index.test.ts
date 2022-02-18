@@ -1,68 +1,12 @@
 /// <reference types="@types/jest" />
+/// <reference types="@types/node" />
 
+import fs from "fs";
+import path from "path";
 import { generateTokensFromText } from "../src/generateTokensFromText";
 
-it(`Generate lexeme record`, () => {
-  const lexemeRecord = generateTokensFromText(`
-int a=1;
-int b=2;
-
-a+=1;
-a++;
-a=a+1;
-
-b-=1;
-b--;
-b=b-1;
-
-a/=1;
-a/b;
-
-a*=1;
-a*b;
-
-a%=1;
-a%b;
-
-a=1;
-a==b;
-
-a<<2
-a<=2
-a<2
-
-b>>2
-b>=2
-b>2
-
-!a
-a!=b
-
-a&&b
-a&b
-
-a||b
-a|b
-
-~a
-^a
-
-int a = 1;
-float b = 2;
-if (a == 2) {
-  char[] c = {10, 22, 22.5};
-} else {
-  char[] d = "Hello \"World";
-}
-
-bool d= true;
-bool e =false;
-
-char str[] = {'A', 'B'};
-char str[] = "\"AB";`)
-
-  console.log(lexemeRecord);
-  
+it(`Generate lexeme record`, async () => {
+  const lexemeRecord = generateTokensFromText(fs.readFileSync(path.join(__dirname, "input.txt"), "utf-8"))
   expect(Array.from(lexemeRecord.identifiers)).toStrictEqual([
     "a",
     "b",
@@ -123,8 +67,8 @@ char str[] = "\"AB";`)
   ])
 
   expect(Array.from(lexemeRecord.string_literals)).toStrictEqual([
-    "Hello \"World",
-    "\"AB",
+    "\"Hello \\\"World\"",
+    "\"\\\"AB\"",
   ])
 
   expect(Array.from(lexemeRecord.boolean_literals)).toStrictEqual([
@@ -147,7 +91,7 @@ char str[] = "\"AB";`)
     "22.5",
   ])
 
-  expect(Array.from(lexemeRecord.punctuations)).toStrictEqual([
+  expect(Array.from(lexemeRecord.integers)).toStrictEqual([
     "1",
     "2",
     "10",
