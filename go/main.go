@@ -2,6 +2,7 @@ package main
 
 // Importing necessary libraries
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -88,14 +89,6 @@ var operatorsMap = map[string]map[string]string{
 	"^": {
 		"default": "bitwise_operators",
 	},
-}
-
-// A utility function to panic on error.
-// Not relevant for this exercise but makes the code a bit shorter
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }
 
 // Check if the passed character is a white space or not
@@ -346,13 +339,20 @@ func printTokenMap(tokensMap TokensMap) {
 
 func main() {
 	// Read from input.txt file
-	data, err := os.ReadFile("input.txt")
+	data, err := os.ReadFile("input1.txt")
 	// Check for error
-	check(err)
-	// Get the text content of the data
-	textContent := string(data)
-	// Generate the token map
-	tokensMap := generateTokensMapFromText(textContent)
-	// Print token map to console
-	printTokenMap(tokensMap)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			fmt.Println("Please provide input.txt file")
+		} else {
+			panic(err)
+		}
+	} else {
+		// Get the text content of the data
+		textContent := string(data)
+		// Generate the token map
+		tokensMap := generateTokensMapFromText(textContent)
+		// Print token map to console
+		printTokenMap(tokensMap)
+	}
 }
