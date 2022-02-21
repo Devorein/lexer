@@ -1,17 +1,39 @@
 package main
 
+// Importing necessary libraries
 import (
 	"fmt"
 	"os"
 	"strings"
 )
 
-var keywordsMap = map[string]bool{"int": true, "if": true, "else": true, "double": true, "char": true, "bool": true, "void": true}
-var punctuationMap = map[string]bool{",": true, ";": true, "(": true, ")": true, "{": true, "}": true, "[": true, "]": true}
+// A map of valid keywords, the key is the keyword, value is a boolean literal true
+var keywordsMap = map[string]bool{"int": true, "if": true, "else": true, "double": true, "char": true, "bool": true, "void": true, "float": true}
+
+// A map of valid punctuations
+var punctuationMap = map[string]bool{",": true, "-": true, ";": true, "(": true, ")": true, "{": true, "}": true, "[": true, "]": true}
+
+// A map of valid numeric digits
 var numericLiteralMap = map[string]bool{"1": true, "2": true, "3": true, "4": true, "5": true, "6": true, "7": true, "8": true, "9": true, "0": true}
+
+// A map of valid boolean literals
 var booleanLiteralMap = map[string]bool{"true": true, "false": true}
 
-var operatorLookAheadTable = map[string]map[string]string{
+// A map of maps where operator is the key
+// and value is a map of operator and token class
+// This operator map is used to check if the current character can be concatenated with next characters to form a single token
+// Its done by first checking if the current character exist in the map
+// If so, then increment the pointer and check the next character
+// If the next character belong in the nested map
+// Concatenate both the characters into a single token class
+// The value of the nested map is the token class
+// If no value exist in nested map then the default token class
+// For example ++
+// + is the first key in the map
+// The second characters is also + and it does exist in the map for +
+// So concatenate these two characters ++ together to a single token class
+// Otherwise if it was +a, then it would've used the `default` token class
+var operatorsMap = map[string]map[string]string{
 	"+": {
 		"+":       "unary_operators",
 		"=":       "assignment_operators",
@@ -68,41 +90,59 @@ var operatorLookAheadTable = map[string]map[string]string{
 	},
 }
 
+// A utility function to panic on error.
+// Not relevant for this exercise but makes the code a bit shorter
 func check(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
 
+// Check if the passed character is a white space or not
 func checkIsWhiteSpace(char string) bool {
 	strChar := string(char)
+	// Would've been simpler with regex, but its not allowed
 	return strChar == "\r" || strChar == " " || strChar == "\n"
 }
 
-func checkIsAlphabetical(char string) bool {
-	_, existInOperatorLookAheadTable := operatorLookAheadTable[char]
+// Check if the character is alphabetic or not,
+// Sometimes numeric check might be skipped
+func checkIsAlphabetical(char string, skipNumericCheck bool) bool {
+	_, existInOperatorsMap := operatorsMap[char]
 	_, existInPunctuationMap := punctuationMap[char]
 	_, existInNumericLiteralMap := numericLiteralMap[char]
-
-	return !existInOperatorLookAheadTable && !existInPunctuationMap && !existInNumericLiteralMap
+	if skipNumericCheck {
+		existInNumericLiteralMap = false
+	}
+	// If its not a operator or a numeric literal or a punctuation then its alphabetical
+	return !existInOperatorsMap && !existInPunctuationMap && !existInNumericLiteralMap
 }
 
-type TokensRecord map[string]map[string]bool
+// Custom type for storing tokens in their appropriate token classes
+type TokensMap map[string]map[string]bool
 
-func checkIdentifier(tokensRecord TokensRecord, lexeme string) {
+// Check if a lexeme is an identifier or not
+// It takes in the tokens map to populate the appropriate token class
+func checkIdentifier(tokensMap TokensMap, lexeme string) {
+	// Check if the lexeme is a keyword
 	_, isKeyword := keywordsMap[lexeme]
+	// Check if the lexeme is a boolean literal
 	_, isBooleanLiteral := booleanLiteralMap[lexeme]
 	if isKeyword {
-		tokensRecord["keywords"][lexeme] = true
+		// Add the lexeme to the keywords token class
+		tokensMap["keywords"][lexeme] = true
 	} else if isBooleanLiteral {
-		tokensRecord["boolean_literals"][lexeme] = true
+		// Add the lexeme to the boolean literal token class
+		tokensMap["boolean_literals"][lexeme] = true
 	} else {
-		tokensRecord["identifiers"][lexeme] = true
+		// Add the lexeme to the identifier token class
+		tokensMap["identifiers"][lexeme] = true
 	}
 }
 
-func generateTokensFromText(textContent string) TokensRecord {
-	tokensRecord := TokensRecord{
+func generateTokensMapFromText(textContent string) TokensMap {
+	// Initialize the token class
+	tokensMap := TokensMap{
 		"keywords":             {},
 		"identifiers":          {},
 		"unary_operators":      {},
@@ -120,135 +160,199 @@ func generateTokensFromText(textContent string) TokensRecord {
 		"character_literals":   {},
 	}
 
+	// Split all the lines by newline character
 	lines := strings.Split(textContent, "\n")
 
+	// Loop through all the lines
 	for lineNumber := 0; lineNumber < len(lines); lineNumber += 1 {
+		// Get each line
 		line := lines[lineNumber]
 
 		index := 0
+		// Loop through each character of the line
+		// updating the index will be done dynamically so its not present in the for loop
+		// For example if we find two characters that belongs to the same token class
+		// index would be incremented by two rather than the usual one
+		// And some other edge cases where regular increment by 1 wouldn't suffice
 		for index < len(line) {
+			// Get each character
 			char := string(line[index])
-
+			// If its not a carriage return, new line or a white space, we proceed to classify the lexeme
 			if !checkIsWhiteSpace(char) {
-				operatorLookAheadTableValue, isOperator := operatorLookAheadTable[char]
+				// Check if the current character is present in the operator map
+				operatorsMapValue, isOperator := operatorsMap[char]
+				// Check if the current character is present in the punctuation map
 				_, isPunctuation := punctuationMap[char]
+				// Check if the current character is present in the numeric map
 				_, isNumericLiteral := numericLiteralMap[char]
 
+				// If its an operator
 				if isOperator {
+					// Operators might come in a pair of two, so get the next character
 					nextChar := string(line[index+1])
-					tokenClass, belongsToTokenClass := operatorLookAheadTableValue[nextChar]
+					// Check if the next character can be grouped with the current operator
+					tokenClass, belongsToTokenClass := operatorsMapValue[nextChar]
 
+					// If it can be grouped
 					if belongsToTokenClass {
-						tokensRecord[tokenClass][char+nextChar] = true
+						// Populate the token map with the correct token class
+						// concatenate them together to a single token class
+						tokensMap[tokenClass][char+nextChar] = true
+						// Increase the pointer as two characters have been consumed
 						index += 1
-					} else {
-						tokensRecord[operatorLookAheadTableValue["default"]][char] = true
+					} else
+					// If it can't be grouped
+					{
+						// add it to the default token class of the operator
+						tokensMap[operatorsMapValue["default"]][char] = true
 					}
+					// Move to the next character
 					index += 1
 				} else if isPunctuation {
-					tokensRecord["punctuations"][char] = true
+					// punctuations lexemes only contain a single character, no need to check the next character
+					// Add the lexeme to the punctuations token class
+					tokensMap["punctuations"][char] = true
+					// Move to the next character
 					index += 1
 				} else if isNumericLiteral {
+					// We need to check if the numeric literal is regular integer or a floating point vlaue
 					lexeme, isFloatingPoint := char, false
 					index += 1
+					// Loop through all the character till we reach the end of line
 					for ; index < len(line); index++ {
+						// get the next character
 						nextChar := string(line[index])
+						// Check if its a digit
 						_, isNumericLiteral := numericLiteralMap[nextChar]
+						// If its a digit
 						if isNumericLiteral {
+							// Concatenate it with the current lexeme
 							lexeme += nextChar
 						} else if nextChar == "." {
+							// Else if next character is a . it means we have encountered a floating point number
+							// Set the isFloatingPoint flag to true
 							isFloatingPoint = true
+							// Concatenate the .
 							lexeme += nextChar
 						} else {
+							// Otherwise its neither a digit nor a . so break the loop
 							break
 						}
 					}
 
+					// If we are dealing with a floating point number
 					if isFloatingPoint {
-						tokensRecord["floating_points"][lexeme] = true
+						// Populate the floating_points token class with the lexeme
+						tokensMap["floating_points"][lexeme] = true
 					} else {
-						tokensRecord["integers"][lexeme] = true
+						// Otherwise populate the integers token class with the lexeme
+						tokensMap["integers"][lexeme] = true
 					}
-					tokensRecord["numeric_literals"][lexeme] = true
+					// Regardless of whether its a integer or floating point,
+					// Add it to the numeric literals token class
+					tokensMap["numeric_literals"][lexeme] = true
 				} else if char == "\"" {
+					// If we have encountered a " (double quote)
+					// We are starting a string literal
 					lexeme := ""
 					index += 1
+					// Loop through all the character till we reach the end of line
 					for ; index < len(line); index++ {
+						// get the next character
 						nextChar := string(line[index])
-
+						// If the next character is \" escaped double quote
+						// We shouldn't end the literal as the quote has been escaped
 						if nextChar == "\\" && string(line[index+1]) == "\"" {
+							// Increment the pointer
+							// Add \" to the lexeme
+							// Not we need to escape both \ and " thats why the string is a bit weird
 							index += 1
 							lexeme += "\\\""
 						} else if nextChar == "\"" {
+							// If next character is "
+							// We have checked for escaped character so this must mean end of string
 							index += 1
+							// break the loop we've reached the end of string
 							break
 						} else {
+							// concatenate every thing within the quotes
 							lexeme += nextChar
 						}
 					}
-
-					tokensRecord["string_literals"]["\""+lexeme+"\""] = true
+					// Add the lexeme to the string_literals class
+					tokensMap["string_literals"]["\""+lexeme+"\""] = true
 				} else if char == "'" {
-					lexeme := ""
+					// Starting of a character literal
 					index += 1
-
-					for ; index < len(line); index++ {
-						nextChar := string(line[index])
-
-						if nextChar == "'" {
-							index += 1
-							break
-						}
-
-						lexeme += nextChar
-					}
-					tokensRecord["character_literals"][lexeme] = true
+					// Add the lexeme to the character literals class
+					tokensMap["character_literals"][string(line[index])] = true
+					// Increment the pointer as we don't need to deal with the single quote after the character
+					index += 1
 				} else {
+					// It could either be a keyword, identifier or literals
 					lexeme := char
 					index += 1
+					// Loop through all the character till we reach the end of line
 					for ; index < len(line); index++ {
+						// get the next character
 						nextChar := string(line[index])
 
+						// If its a whitespace, for example identifier\s=\strue\n
 						if checkIsWhiteSpace(nextChar) {
-							checkIdentifier(tokensRecord, lexeme)
+							// Add the lexeme to the appropriate token class
+							checkIdentifier(tokensMap, lexeme)
+							// Break the loop
 							break
 						}
 
-						if checkIsAlphabetical(nextChar) {
+						// Check if its alphabetical
+						// Skip checking for numeric as its allowed after the first character
+						if checkIsAlphabetical(nextChar, len(lexeme) != 0) {
 							lexeme += nextChar
+							// If we are at the last character of the line
 							if index == len(line)-1 {
-								checkIdentifier(tokensRecord, lexeme)
+								checkIdentifier(tokensMap, lexeme)
 							}
 						} else {
-							checkIdentifier(tokensRecord, lexeme)
+							checkIdentifier(tokensMap, lexeme)
 							break
 						}
 					}
 				}
 			} else {
+				// Increment the pointer on whitespace
 				index += 1
 			}
 		}
 	}
-	return tokensRecord
+	// Return token map
+	return tokensMap
 }
 
-func printTokenRecord(tokensRecord TokensRecord) {
-	for tokenClass, tokenClassItemsMap := range tokensRecord {
+// Print passed token map to console
+func printTokenMap(tokensMap TokensMap) {
+	// Loop through the key, value pairs of the map
+	for tokenClass, tokenClassItemsMap := range tokensMap {
 		tokenClassItems := ""
-
+		// Loop through each key of the map value, which contains all the tokens
 		for tokenClassItem := range tokenClassItemsMap {
 			tokenClassItems += tokenClassItem + " "
 		}
 
+		// Print the token class and the tokens
 		fmt.Println(tokenClass+":", tokenClassItems)
 	}
 }
 
 func main() {
+	// Read from input.txt file
 	data, err := os.ReadFile("input.txt")
+	// Check for error
 	check(err)
+	// Get the text content of the data
 	textContent := string(data)
-	tokensRecord := generateTokensFromText(textContent)
-	printTokenRecord(tokensRecord)
+	// Generate the token map
+	tokensMap := generateTokensMapFromText(textContent)
+	// Print token map to console
+	printTokenMap(tokensMap)
 }
