@@ -1,14 +1,56 @@
-int a1, b, c;
-float d, e;
-a = b = 5;
-c = 6;
-if ( a > b)
-{
-  c = a- b;
-e = d -2.0;
+int a=1;
+int b=2;
+
+a+=1;
+a++;
+a=a+1;
+
+b-=1;
+b--;
+b=b-1;
+
+a/=1;
+a/b;
+
+a*=1;
+a*b;
+
+a%=1;
+a%b;
+
+a=1;
+a==b;
+
+a<<2
+a<=2
+a<2
+
+b>>2
+b>=2
+b>2
+
+!a
+a!=b
+
+a&&b
+a&b
+
+a||b
+a|b
+
+~a
+^a
+
+int a = 1;
+float b = 2;
+if (a == 2) {
+  char[] c = {10, 22, 22.5};
+} else {
+  char[] d = "Hello \"World";
 }
-else
-{
-d = e + 6.0;
-b = a + c = true;
-}
+
+bool d= true;
+bool e =false;
+
+char str123[] = {'A', 'B'};
+char str[] = "\"AB";

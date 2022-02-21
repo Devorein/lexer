@@ -52,5 +52,5 @@ if (a == 2) {
 bool d= true;
 bool e =false;
 
-char str[] = {'A', 'B'};
-char str[] = "\"AB";
+char str123[] = {'A', 'B'};
+char 1234str[] = "\"AB";

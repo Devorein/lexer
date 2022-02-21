@@ -280,7 +280,7 @@ func generateTokensMapFromText(textContent string) TokensMap {
 					// Add the lexeme to the character literals class
 					tokensMap["character_literals"][string(line[index])] = true
 					// Increment the pointer as we don't need to deal with the single quote after the character
-					index += 1
+					index += 2
 				} else {
 					// It could either be a keyword, identifier or literals
 					lexeme := char
@@ -322,24 +322,59 @@ func generateTokensMapFromText(textContent string) TokensMap {
 	return tokensMap
 }
 
+// Loop trough a map, concatenate all its key and return them
+func concatenateMapKeys(mapValue map[string]bool) string {
+	mapKeyValues := []string{}
+	// Loop through each key of the map value
+	for mapKey := range mapValue {
+		mapKeyValues = append(mapKeyValues, mapKey)
+	}
+	return strings.Join(mapKeyValues, " ")
+}
+
+// Merge two maps together
+func mergeMaps(map1 map[string]bool, map2 map[string]bool) map[string]bool {
+	newMap := map[string]bool{}
+
+	for mapKey := range map1 {
+		newMap[mapKey] = true
+	}
+
+	for mapKey := range map2 {
+		newMap[mapKey] = true
+	}
+
+	return newMap
+}
+
 // Print passed token map to console
 func printTokenMap(tokensMap TokensMap) {
+	fmt.Println("Keywords:", concatenateMapKeys(tokensMap["keywords"]))
+	fmt.Println("Identifiers:", concatenateMapKeys(tokensMap["identifiers"]))
+	mathOperators := concatenateMapKeys(tokensMap["arithmetic_operators"])
+	// Check if = exist in assignment operators,
+	_, equalExists := tokensMap["assignment_operators"]["="]
+	if equalExists {
+		mathOperators += " " + "="
+	}
+	fmt.Println("Math Operators:", mathOperators)
+	// Not sure whether > belongs to logical or relational operator but the output must match
+	fmt.Println("Logical Operators:", concatenateMapKeys(mergeMaps(tokensMap["logical_operators"], tokensMap["relational_operators"])))
+	fmt.Println("Numeric Values:", concatenateMapKeys(tokensMap["numeric_literals"]))
+	fmt.Println("Others:", concatenateMapKeys(tokensMap["punctuations"]))
+
+	fmt.Println()
+
 	// Loop through the key, value pairs of the map
 	for tokenClass, tokenClassItemsMap := range tokensMap {
-		tokenClassItems := ""
-		// Loop through each key of the map value, which contains all the tokens
-		for tokenClassItem := range tokenClassItemsMap {
-			tokenClassItems += tokenClassItem + " "
-		}
-
 		// Print the token class and the tokens
-		fmt.Println(tokenClass+":", tokenClassItems)
+		fmt.Println(tokenClass+":", concatenateMapKeys(tokenClassItemsMap))
 	}
 }
 
 func main() {
 	// Read from input.txt file
-	data, err := os.ReadFile("input1.txt")
+	data, err := os.ReadFile("input.txt")
 	// Check for error
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
