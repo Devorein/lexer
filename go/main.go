@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -347,10 +348,22 @@ func mergeMaps(map1 map[string]bool, map2 map[string]bool) map[string]bool {
 	return newMap
 }
 
+// Sort the keys of a map
+func sortMapKey(passedMap TokensMap) []string {
+	mapKeys := []string{}
+	for mapKey := range passedMap {
+		mapKeys = append(mapKeys, mapKey)
+	}
+	sort.Strings(mapKeys)
+	return mapKeys
+}
+
 // Print passed token map to console
 func printTokenMap(tokensMap TokensMap) {
+	// Matching the required output
 	fmt.Println("Keywords:", concatenateMapKeys(tokensMap["keywords"]))
 	fmt.Println("Identifiers:", concatenateMapKeys(tokensMap["identifiers"]))
+
 	mathOperators := concatenateMapKeys(tokensMap["arithmetic_operators"])
 	// Check if = exist in assignment operators,
 	_, equalExists := tokensMap["assignment_operators"]["="]
@@ -365,10 +378,16 @@ func printTokenMap(tokensMap TokensMap) {
 
 	fmt.Println()
 
-	// Loop through the key, value pairs of the map
-	for tokenClass, tokenClassItemsMap := range tokensMap {
+	maxKeyLength := len("assignment_operators")
+
+	// Sort the map keys
+	sortedKeys := sortMapKey(tokensMap)
+
+	for _, v := range sortedKeys {
+		// Formatting all the token classes in a nice manner
+		lengthDifference := maxKeyLength - len(v)
 		// Print the token class and the tokens
-		fmt.Println(tokenClass+":", concatenateMapKeys(tokenClassItemsMap))
+		fmt.Println(v, strings.Repeat(" ", lengthDifference)+":", concatenateMapKeys(tokensMap[v]))
 	}
 }
 
@@ -391,3 +410,5 @@ func main() {
 		printTokenMap(tokensMap)
 	}
 }
+
+// That was a lot of fun :D
